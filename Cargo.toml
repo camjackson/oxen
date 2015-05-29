@@ -2,6 +2,12 @@
 name = "oxen"
 version = "0.0.1"
 authors = ["Cam Jackson <camjackson89@gmail.com>"]
+description = "A game engine written in rust."
+documentation = "https://github.com/camjackson/oxen"
+homepage = "https://github.com/camjackson/oxen"
+repository = "https://github.com/camjackson/oxen"
+readme = "README.md"
+license = "GPL-3.0"
 
 [dependencies]
 glium = "0.4.0"
