@@ -1,0 +1,9 @@
+[package]
+name = "oxen"
+version = "0.0.1"
+authors = ["Cam Jackson <camjackson89@gmail.com>"]
+
+[dependencies]
+glium = "0.4.0"
+glutin = "0.1.4"
+time = "*"
