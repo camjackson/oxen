@@ -2,7 +2,7 @@ use glium::Display;
 use glium::vertex::VertexBufferAny;
 use glium::vertex::VertexBuffer;
 use glium::index::IndexBuffer;
-use glium::index::TrianglesList;
+use glium::index::PrimitiveType::TrianglesList;
 use glium::Program;
 
 use shaders;
@@ -38,7 +38,7 @@ fn square_vertices(display: &Display) -> VertexBufferAny {
     ).into_vertex_buffer_any()
 }
 
-fn square_indices(display: &Display) -> IndexBuffer {
-    IndexBuffer::new(display, TrianglesList(vec![0u16, 1, 2, 0, 2, 3]))
+fn square_indices(display: &Display) -> IndexBuffer<u16> {
+    IndexBuffer::new(display, TrianglesList, vec![0, 1, 2, 0, 2, 3])
 }
 

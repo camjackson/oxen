@@ -9,6 +9,6 @@ use transform::Transform;
 pub struct RenderObject {
     pub transforms: Vec<Arc<Mutex<Transform>>>,
     pub vertices: VertexBufferAny,
-    pub indices: IndexBuffer,
+    pub indices: IndexBuffer<u16>,
     pub program: Program,
 }
