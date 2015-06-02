@@ -5,6 +5,8 @@ extern crate time;
 
 use std::thread;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{channel, Sender};
+use std::collections::HashMap;
 
 use glium::Display;
 use glium::DisplayBuild;
@@ -27,13 +29,13 @@ pub struct Oxen {
     width: f32,
     height: f32,
     camera: (f32, f32),
-    behaviour: Option<Box<Behaviour>>,
-    render_object: Option<RenderObject>,
+    behaviour_sender: Option<Sender<Box<Behaviour>>>,
+    render_objects: HashMap<&'static str, RenderObject>,
 }
 
 impl Oxen {
     pub fn new(width: f32, height: f32) -> Oxen {
-        Oxen {
+        let mut oxen = Oxen {
             display: glutin::WindowBuilder::new()
                 .with_dimensions(width as u32, height as u32)
                 .with_title(format!("Oxen game engine"))
@@ -43,49 +45,38 @@ impl Oxen {
             width: width,
             height: height,
             camera: (0., 0.),
-            behaviour: None,
-            render_object: None,
-        }
+            behaviour_sender: None,
+            render_objects: HashMap::new(),
+        };
+        oxen.load_models();
+        oxen.game_loop();
+        oxen
     }
 
     pub fn set_camera(&mut self, coords: (f32, f32)) {
         self.camera = coords;
     }
 
-    pub fn set_behaviour(&mut self, behaviour: Box<Behaviour>) {
-        self.behaviour = Some(behaviour);
+    pub fn add_behaviour(&mut self, behaviour: Box<Behaviour>) {
+        match self.behaviour_sender {
+            Some(ref sender) => sender.send(behaviour).unwrap(),
+            None => panic!("Oxen's behaviour sender has not been initialised! This is a bug in oxen :(")
+        }
     }
 
-    pub fn set_render_object(&mut self, render_object: RenderObject) {
-        self.render_object = Some(render_object);
-    }
-
-    pub fn game_loop(&mut self, updates_per_second: u32) {
-        let mut behaviour = match self.behaviour.take(){
-            Some(b) => b,
-            None => return
-        };
-        thread::spawn(move || {
-            let mut frame_count = 0u16;
-            let mut previous_second = 0u64;
-            loop {
-                if time::precise_time_ns() - previous_second > 1000000000 {
-                    println!("Update fps: {}", frame_count);
-                    frame_count = 0;
-                    previous_second = time::precise_time_ns();
-                }
-                frame_count += 1;
-                thread::sleep_ms(1000 / updates_per_second);
-                behaviour.update();
+    pub fn attach_render_object(&mut self, transform: Arc<Mutex<Transform>>, render_object_name: &str) -> Result<(), &'static str> {
+        match self.render_objects.get_mut(render_object_name) {
+            Some(render_object) => {
+                render_object.transforms.push(transform);
+                Ok(())
+            },
+            None => {
+                Err("No such render object: {}") //TODO
             }
-        });
+        }
     }
 
-    pub fn render_loop(&mut self) {
-        let render_object = match self.render_object.take() {
-            Some(r) => r,
-            None => return
-        };
+    pub fn render_loop(&self) {
         let mut frame_count = 0u16;
         let mut previous_second = 0u64;
         loop {
@@ -96,18 +87,23 @@ impl Oxen {
             }
             frame_count += 1;
 
-            let instances = self.instances(&render_object.transforms);
-            let uniforms = uniform! { view_transform: self.view_transform() };
+            let uniforms = uniform!{ view_transform: self.view_transform() };
 
             let mut frame = self.display.draw();
             frame.clear_color(1.0, 1.0, 1.0, 1.0);
-            frame.draw(
-                (&render_object.vertices, instances.per_instance_if_supported().unwrap()),
-                &render_object.indices,
-                &render_object.program,
-                &uniforms,
-                &std::default::Default::default()
-            ).unwrap();
+
+            for render_object in self.render_objects.values() {
+                let instances = self.instances(&render_object.transforms);
+
+                frame.draw(
+                    (&render_object.vertices, instances.per_instance_if_supported().unwrap()),
+                    &render_object.indices,
+                    &render_object.program,
+                    &uniforms,
+                    &std::default::Default::default()
+                ).unwrap();
+            }
+
             frame.finish();
 
             for event in self.display.poll_events() {
@@ -117,6 +113,41 @@ impl Oxen {
                 }
             }
         }
+    }
+
+    fn load_models(&mut self) {
+        let square = self.square();
+        self.render_objects.insert("square", square);
+    }
+
+    fn game_loop(&mut self) {
+        let (sender, receiver) = channel();
+        self.behaviour_sender = Some(sender);
+        let mut behaviours = Vec::<Box<Behaviour>>::new();
+
+        thread::spawn(move || {
+            let mut frame_count = 0u32;
+            let mut previous_second = 0u64;
+            loop {
+                if time::precise_time_ns() - previous_second > 1000000000 {
+                    println!("Update fps: {}", frame_count);
+                    frame_count = 0;
+                    previous_second = time::precise_time_ns();
+                }
+                frame_count += 1;
+
+                loop {
+                    match receiver.try_recv() {
+                        Ok(behaviour) => behaviours.push(behaviour),
+                        Err(_) => break
+                    };
+                }
+
+                for behaviour in behaviours.iter_mut() {
+                    behaviour.update();
+                }
+            }
+        });
     }
 
     fn instances(&self, transforms: &Vec<Arc<Mutex<Transform>>>) -> VertexBufferAny {
