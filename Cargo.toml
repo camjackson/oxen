@@ -1,6 +1,6 @@
 [package]
 name = "oxen"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["Cam Jackson <camjackson89@gmail.com>"]
 description = "A game engine written in rust."
 documentation = "https://github.com/camjackson/oxen"
