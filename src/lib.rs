@@ -1,6 +1,6 @@
 #[macro_use]
 extern crate glium;
-extern crate glutin;
+
 extern crate time;
 
 use std::thread;
@@ -13,6 +13,7 @@ use glium::DisplayBuild;
 use glium::Surface;
 use glium::vertex::VertexBufferAny;
 use glium::vertex::VertexBuffer;
+use glium::glutin;
 
 mod models;
 mod shaders;
