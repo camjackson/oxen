@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/camjackson/oxen.svg?branch=master)](https://travis-ci.org/camjackson/oxen)
+
 A game engine written in rust.
 
 Very early days, don't try to use this yet!
