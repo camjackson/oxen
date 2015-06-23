@@ -11,5 +11,4 @@ license = "GPL-3.0"
 
 [dependencies]
 glium = "*"
-glutin = "*"
 time = "*"

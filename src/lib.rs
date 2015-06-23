@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate glium;
-
 extern crate time;
 
 use std::thread;
@@ -14,24 +13,28 @@ use glium::Surface;
 use glium::vertex::VertexBufferAny;
 use glium::vertex::VertexBuffer;
 use glium::glutin;
+use glium::glutin::VirtualKeyCode;
 
 mod models;
 mod shaders;
 mod render_object;
 mod transform;
 mod behaviour;
+mod camera;
 
 pub use self::render_object::RenderObject;
 pub use self::transform::Transform;
 pub use self::behaviour::Behaviour;
+pub use self::camera::Camera;
 
 pub struct Oxen {
     display: glium::Display,
     width: f32,
     height: f32,
-    camera: (f32, f32),
+    camera: Option<Arc<Mutex<Camera>>>,
     behaviour_sender: Option<Sender<Box<Behaviour>>>,
     render_objects: HashMap<&'static str, RenderObject>,
+    keyboard_state: Arc<Mutex<HashMap<VirtualKeyCode, bool>>>,
 }
 
 impl Oxen {
@@ -45,17 +48,18 @@ impl Oxen {
                 .unwrap(),
             width: width,
             height: height,
-            camera: (0., 0.),
+            camera: None,
             behaviour_sender: None,
             render_objects: HashMap::new(),
+            keyboard_state: Arc::new(Mutex::new(HashMap::new())),
         };
         oxen.load_models();
         oxen.game_loop();
         oxen
     }
 
-    pub fn set_camera(&mut self, coords: (f32, f32)) {
-        self.camera = coords;
+    pub fn set_camera(&mut self, camera: Arc<Mutex<Camera>>) {
+        self.camera = Some(camera);
     }
 
     pub fn add_behaviour(&mut self, behaviour: Box<Behaviour>) {
@@ -77,7 +81,7 @@ impl Oxen {
         }
     }
 
-    pub fn render_loop(&self) {
+    pub fn render_loop(&mut self) {
         let mut frame_count = 0u16;
         let mut previous_second = 0u64;
         loop {
@@ -110,6 +114,13 @@ impl Oxen {
             for event in self.display.poll_events() {
                 match event {
                     glutin::Event::Closed => return,
+                    glutin::Event::KeyboardInput(state, _, some_keycode) => {
+                        match (state, some_keycode) {
+                            (_, None) => (),
+                            (glutin::ElementState::Pressed, Some(keycode)) => {self.keyboard_state.lock().unwrap().insert(keycode, true);},
+                            (glutin::ElementState::Released, Some(keycode)) => {self.keyboard_state.lock().unwrap().insert(keycode, false);},
+                        }
+                    },
                     _ => ()
                 }
             }
@@ -122,15 +133,17 @@ impl Oxen {
     }
 
     fn game_loop(&mut self) {
-        let (sender, receiver) = channel();
-        self.behaviour_sender = Some(sender);
+        let (behaviour_sender, behaviour_receiver) = channel();
+        self.behaviour_sender = Some(behaviour_sender);
+
         let mut behaviours = Vec::<Box<Behaviour>>::new();
+        let keyboard_state = self.keyboard_state.clone();
 
         thread::spawn(move || {
             let mut frame_count = 0u32;
             let mut previous_second = 0u64;
             loop {
-                if time::precise_time_ns() - previous_second > 1000000000 {
+                if time::precise_time_ns() - previous_second > 1_000_000_000 {
                     println!("Update fps: {}", frame_count);
                     frame_count = 0;
                     previous_second = time::precise_time_ns();
@@ -138,14 +151,20 @@ impl Oxen {
                 frame_count += 1;
 
                 loop {
-                    match receiver.try_recv() {
+                    match behaviour_receiver.try_recv() {
                         Ok(behaviour) => behaviours.push(behaviour),
                         Err(_) => break
                     };
                 }
 
+                let key_pressed = &|key: VirtualKeyCode| {
+                    match keyboard_state.lock().unwrap().get(&key) {
+                        Some(pressed) => *pressed,
+                        None => false
+                    }
+                };
                 for behaviour in behaviours.iter_mut() {
-                    behaviour.update();
+                    behaviour.update(key_pressed);
                 }
             }
         });
@@ -175,7 +194,14 @@ impl Oxen {
     }
 
     fn view_transform(&self) -> [[f32; 4]; 4] {
-        let (x, y) = self.camera;
+        let (x, y) = match self.camera {
+            Some(ref c) => {
+                let mutex = c.clone();
+                let ref camera = mutex.lock().unwrap().transform;
+                (camera.x, camera.y)
+            },
+            None => panic!("You must assign Oxen a Camera before starting the render loop")
+        };
         [
             [ 1.0 / self.width, 0.0              , 0.0, 0.0],
             [ 0.0             , 1.0 / self.height, 0.0, 0.0],
