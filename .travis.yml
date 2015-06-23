@@ -1,5 +1,10 @@
+env:
+  global:
+    - secure: O32zHLcVPmvB3SAxwx+6vCWXsdPFOYOPMqbeC7KqSoSpy0V+e6WP5o79kmzf0a6DNbReyr4bHupQYZBG/8STkTSPUtq2FnERTDATyKUppTejQQEribv4tKhr6U0WrgrtDdfeopDvwDsusa7CasGWZxDpP7GSNDh7BntFZZINbW5RqoEONt1C5glTDT7F8oGLvCjXdF59u3XVE74J3ufEF1hoPfVASH9MiF397GHBb6FTRjBVmT/ccgpy58y983w2mjICHUCI0xI1DUdtzjaXvNFR8VcOrk30IoT2gzz348KEfSERsdgkP9llo+/APihIRzX/Sh9cntmS4vhjQIrFzOlF3Xqw60we4LYGuE8IEQi68XEUj4x0oQ1xwO8DRMqKGnlIyRZewfWvNLy+riAKHQkAu9RIlJBt1zVjcF+uYNvo3roV5RRybqaDpidHs/Ff1VP27AKmJjM5MFB2ef3SoYYTc0aXh4p7IhwnwGN7EFxV2uAGjj3ewJ9PVrIFg+D754oTLWgoSWialcqJH2OxCO/iu4PuZNZloW5x3RQelSqfaahkj4cPXA4oh7JffL8StX4hkcX9TBUaKgQoAFUfiH1gL70f5amfRZE8VdaRiHsindD3hJ7zybb8cIPdEx5uNCsKax2GhslfPcu3eumW638XLvaYP+1dq8tsSyBu5/E=
 language: rust
 script:
   - cargo build --verbose
   - cargo test --verbose
   - cargo doc --verbose
+after_script:
+  - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
