@@ -109,7 +109,7 @@ impl Oxen {
                 ).unwrap();
             }
 
-            frame.finish();
+            frame.finish().unwrap();
 
             for event in self.display.poll_events() {
                 match event {
