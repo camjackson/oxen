@@ -20,7 +20,7 @@ pub fn square(display: &Display) -> RenderObject {
 fn square_vertices(display: &Display) -> VertexBufferAny {
     #[derive(Copy, Clone)]
     struct Vertex {
-        vertex_position: [f32; 2],
+        vertex_position: [f32; 3],
         vertex_color: [f32; 3],
     }
 
@@ -30,10 +30,10 @@ fn square_vertices(display: &Display) -> VertexBufferAny {
 
     VertexBuffer::new(display,
         vec![
-            Vertex { vertex_position: [ -0.5,  0.5], vertex_color: colour },
-            Vertex { vertex_position: [  0.5,  0.5], vertex_color: colour },
-            Vertex { vertex_position: [  0.5, -0.5], vertex_color: colour },
-            Vertex { vertex_position: [ -0.5, -0.5], vertex_color: colour },
+            Vertex { vertex_position: [ -0.5,  0.5, 0.], vertex_color: colour },
+            Vertex { vertex_position: [  0.5,  0.5, 0.], vertex_color: colour },
+            Vertex { vertex_position: [  0.5, -0.5, 0.], vertex_color: colour },
+            Vertex { vertex_position: [ -0.5, -0.5, 0.], vertex_color: colour },
         ]
     ).into_vertex_buffer_any()
 }

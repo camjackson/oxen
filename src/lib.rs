@@ -27,6 +27,9 @@ pub use self::transform::Transform;
 pub use self::behaviour::Behaviour;
 pub use self::camera::Camera;
 
+/// The main Oxen game engine object. This is responsible for creating the display,
+/// and managing game and render objects. You'll use this for most (all?) of your
+/// interactions with the engine.
 pub struct Oxen {
     display: glium::Display,
     width: f32,
@@ -38,6 +41,7 @@ pub struct Oxen {
 }
 
 impl Oxen {
+    /// Game engine constructor
     pub fn new(width: f32, height: f32) -> Oxen {
         let mut oxen = Oxen {
             display: glutin::WindowBuilder::new()
@@ -173,8 +177,8 @@ impl Oxen {
     fn instances(&self, transforms: &Vec<Arc<Mutex<Transform>>>) -> VertexBufferAny {
         #[derive(Copy, Clone)]
         struct ModelTransform {
-            model_position: [f32; 2],
-            model_scale: f32,
+            model_position: [f32; 3],
+            model_scale: [f32; 3],
         }
 
         implement_vertex!(ModelTransform, model_position, model_scale);
@@ -185,8 +189,8 @@ impl Oxen {
             let t = mutex.lock().unwrap();
             if t.visible {
                 data.push(ModelTransform {
-                    model_position: [t.x, t.y],
-                    model_scale: t.scale
+                    model_position: [t.x, t.y, t.z],
+                    model_scale: [t.scale_x, t.scale_y, t.scale_z],
                 })
             }
         }
