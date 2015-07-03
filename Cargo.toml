@@ -10,5 +10,7 @@ readme = "README.md"
 license = "GPL-3.0"
 
 [dependencies]
-glium = "*"
 time = "*"
+
+[dependencies.glium]
+path = "../glium"

@@ -177,11 +177,10 @@ impl Oxen {
     fn instances(&self, transforms: &Vec<Arc<Mutex<Transform>>>) -> VertexBufferAny {
         #[derive(Copy, Clone)]
         struct ModelTransform {
-            model_position: [f32; 3],
-            model_scale: [f32; 3],
+            model_transform: [[f32; 4]; 4],
         }
 
-        implement_vertex!(ModelTransform, model_position, model_scale);
+        implement_vertex!(ModelTransform, model_transform);
 
         let mut data = Vec::new();
         for transform in transforms.iter() {
@@ -189,8 +188,12 @@ impl Oxen {
             let t = mutex.lock().unwrap();
             if t.visible {
                 data.push(ModelTransform {
-                    model_position: [t.x, t.y, t.z],
-                    model_scale: [t.scale_x, t.scale_y, t.scale_z],
+                    model_transform: [
+                        [t.scale_x, 0., 0., 0.],
+                        [0., t.scale_y, 0., 0.],
+                        [0., 0., t.scale_z, 0.],
+                        [t.x, t.y, t.z, 1.],
+                    ],
                 })
             }
         }
