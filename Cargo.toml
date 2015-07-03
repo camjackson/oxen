@@ -11,6 +11,5 @@ license = "GPL-3.0"
 
 [dependencies]
 time = "*"
+glium = ">= 0.6.6"
 
-[dependencies.glium]
-path = "../glium"
