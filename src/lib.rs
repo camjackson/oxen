@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate glium;
 extern crate time;
+extern crate nalgebra as na;
 
 use std::thread;
 use std::sync::{Arc, Mutex};
@@ -32,9 +33,7 @@ pub use self::camera::Camera;
 /// interactions with the engine.
 pub struct Oxen {
     display: glium::Display,
-    width: f32,
-    height: f32,
-    camera: Option<Arc<Mutex<Camera>>>,
+    camera: Arc<Mutex<Camera>>,
     behaviour_sender: Option<Sender<Box<Behaviour>>>,
     render_objects: HashMap<&'static str, RenderObject>,
     keyboard_state: Arc<Mutex<HashMap<VirtualKeyCode, bool>>>,
@@ -42,7 +41,7 @@ pub struct Oxen {
 
 impl Oxen {
     /// Game engine constructor
-    pub fn new(width: f32, height: f32) -> Oxen {
+    pub fn new(width: f32, height: f32, camera: Arc<Mutex<Camera>>) -> Oxen {
         let mut oxen = Oxen {
             display: glutin::WindowBuilder::new()
                 .with_dimensions(width as u32, height as u32)
@@ -50,9 +49,7 @@ impl Oxen {
                 .with_vsync()
                 .build_glium()
                 .unwrap(),
-            width: width,
-            height: height,
-            camera: None,
+            camera: camera,
             behaviour_sender: None,
             render_objects: HashMap::new(),
             keyboard_state: Arc::new(Mutex::new(HashMap::new())),
@@ -60,10 +57,6 @@ impl Oxen {
         oxen.load_models();
         oxen.game_loop();
         oxen
-    }
-
-    pub fn set_camera(&mut self, camera: Arc<Mutex<Camera>>) {
-        self.camera = Some(camera);
     }
 
     pub fn add_behaviour(&mut self, behaviour: Box<Behaviour>) {
@@ -187,34 +180,16 @@ impl Oxen {
             let mutex = transform.clone();
             let t = mutex.lock().unwrap();
             if t.visible {
-                data.push(ModelTransform {
-                    model_transform: [
-                        [t.scale_x, 0., 0., 0.],
-                        [0., t.scale_y, 0., 0.],
-                        [0., 0., t.scale_z, 0.],
-                        [t.x, t.y, t.z, 1.],
-                    ],
-                })
+                data.push(ModelTransform{model_transform: t.as_matrix()})
             }
         }
         VertexBuffer::new(&self.display, data).into_vertex_buffer_any()
     }
 
     fn view_transform(&self) -> [[f32; 4]; 4] {
-        let (x, y) = match self.camera {
-            Some(ref c) => {
-                let mutex = c.clone();
-                let ref camera = mutex.lock().unwrap().transform;
-                (camera.x, camera.y)
-            },
-            None => panic!("You must assign Oxen a Camera before starting the render loop")
-        };
-        [
-            [ 1.0 / self.width, 0.0              , 0.0, 0.0],
-            [ 0.0             , 1.0 / self.height, 0.0, 0.0],
-            [ 0.0             , 0.0              , 1.0, 0.0],
-            [-x               , -y               , 0.0, 1.0f32]
-        ]
+        let mutex = self.camera.clone();
+        let camera = mutex.lock().unwrap();
+        camera.view_transform()
     }
 
     pub fn square(&self) -> RenderObject {
