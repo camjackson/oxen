@@ -41,4 +41,8 @@ impl Transform {
             [-self.position.x, -self.position.y, -self.position.z, 1.],
         ]
     }
+
+    pub fn scale_ratio(&self) -> f32 {
+        self.scale.x / self.scale.y
+    }
 }

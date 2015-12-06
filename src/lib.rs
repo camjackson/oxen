@@ -29,7 +29,7 @@ pub use self::behaviour::Behaviour;
 pub use self::camera::Camera;
 
 /// The main Oxen game engine object. This is responsible for creating the display,
-/// and managing game and render objects. You'll use this for most (all?) of your
+/// and managing game and eender objects. You'll use this for most (all?) of your
 /// interactions with the engine.
 pub struct Oxen {
     display: glium::Display,
@@ -89,7 +89,10 @@ impl Oxen {
             }
             frame_count += 1;
 
-            let uniforms = uniform!{ view_transform: self.view_transform() };
+            let uniforms = uniform!{
+                view_transform: self.view_transform(),
+                perspective_transform: self.perspective_transform(),
+            };
 
             let mut frame = self.display.draw();
             frame.clear_color(1.0, 1.0, 1.0, 1.0);
@@ -125,8 +128,8 @@ impl Oxen {
     }
 
     fn load_models(&mut self) {
-        let square = self.square();
-        self.render_objects.insert("square", square);
+        self.render_objects.insert("square", models::square(&self.display));
+        self.render_objects.insert("cube", models::cube(&self.display));
     }
 
     fn game_loop(&mut self) {
@@ -192,8 +195,10 @@ impl Oxen {
         camera.view_transform()
     }
 
-    pub fn square(&self) -> RenderObject {
-        models::square(&self.display)
+    fn perspective_transform(&self) -> [[f32; 4]; 4] {
+        let mutex = self.camera.clone();
+        let camera = mutex.lock().unwrap();
+        camera.perspective_transform()
     }
 }
 

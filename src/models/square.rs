@@ -11,13 +11,13 @@ use render_object::RenderObject;
 pub fn square(display: &Display) -> RenderObject {
     RenderObject {
         transforms: Vec::new(),
-        vertices: square_vertices(display),
-        indices: square_indices(display),
+        vertices: vertices(display),
+        indices: indices(display),
         program: Program::from_source(display, shaders::VERTEX, shaders::FRAGMENT, None).unwrap(),
     }
 }
 
-fn square_vertices(display: &Display) -> VertexBufferAny {
+fn vertices(display: &Display) -> VertexBufferAny {
     #[derive(Copy, Clone)]
     struct Vertex {
         vertex_position: [f32; 3],
@@ -38,7 +38,7 @@ fn square_vertices(display: &Display) -> VertexBufferAny {
     ).into_vertex_buffer_any()
 }
 
-fn square_indices(display: &Display) -> IndexBuffer<u16> {
+fn indices(display: &Display) -> IndexBuffer<u16> {
     IndexBuffer::new(display, TrianglesList, vec![0, 1, 2, 0, 2, 3])
 }
 
